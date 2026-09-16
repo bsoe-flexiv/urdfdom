@@ -34,6 +34,7 @@
 
 /* Author: Wim Meeussen */
 
+#include <cmath>
 #include <fstream>
 #include <map>
 #include <stdexcept>
@@ -283,12 +284,31 @@ bool exportMaterial(Material &material, tinyxml2::XMLElement *config);
 bool exportLink(Link &link, tinyxml2::XMLElement *config);
 bool exportJoint(Joint &joint, tinyxml2::XMLElement *config);
 
+// True if any joint carries a URDF 1.2 extended limit, in which case the
+// exported document must declare version 1.2 or a re-parse would drop them.
+bool usesExtendedJointLimits(const ModelInterface &model)
+{
+  for (std::map<std::string, JointSharedPtr>::const_iterator j = model.joints_.begin();
+       j != model.joints_.end(); ++j)
+  {
+    if (!j->second || !j->second->limits)
+      continue;
+    const JointLimits &jl = *(j->second->limits);
+    if (std::isfinite(jl.acceleration) || std::isfinite(jl.deceleration) || std::isfinite(jl.jerk))
+      return true;
+  }
+  return false;
+}
+
 tinyxml2::XMLDocument*  exportURDFInternal(const ModelInterface &model)
 {
   tinyxml2::XMLDocument *doc = new tinyxml2::XMLDocument();
 
   tinyxml2::XMLElement* robot = doc->NewElement("robot");
   robot->SetAttribute("name", model.name_.c_str());
+  // Omitted for models without extended limits, so they round-trip as 1.0.
+  if (usesExtendedJointLimits(model))
+    robot->SetAttribute("version", "1.2");
   doc->LinkEndChild(robot);
 
 
