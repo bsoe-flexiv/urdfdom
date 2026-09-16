@@ -34,6 +34,7 @@
 
 /* Author: John Hsu */
 
+#include <cmath>
 #include <locale>
 #include <sstream>
 #include <stdexcept>
@@ -688,6 +689,14 @@ bool exportJointLimits(JointLimits &jl, tinyxml2::XMLElement* xml)
   limit_xml->SetAttribute("velocity", urdf_export_helpers::values2str(jl.velocity).c_str());
   limit_xml->SetAttribute("lower", urdf_export_helpers::values2str(jl.lower).c_str());
   limit_xml->SetAttribute("upper", urdf_export_helpers::values2str(jl.upper).c_str());
+  // URDF 1.2 extended limits. Infinity means "unset", and is the parser
+  // default, so only round-trip the values that were actually specified.
+  if (std::isfinite(jl.acceleration))
+    limit_xml->SetAttribute("acceleration", urdf_export_helpers::values2str(jl.acceleration).c_str());
+  if (std::isfinite(jl.deceleration) && jl.deceleration != jl.acceleration)
+    limit_xml->SetAttribute("deceleration", urdf_export_helpers::values2str(jl.deceleration).c_str());
+  if (std::isfinite(jl.jerk))
+    limit_xml->SetAttribute("jerk", urdf_export_helpers::values2str(jl.jerk).c_str());
   xml->LinkEndChild(limit_xml);
   return true;
 }
