@@ -50,6 +50,7 @@ namespace urdf_export_helpers {
 std::string values2str(unsigned int count, const double *values, double (*conv)(double))
 {
     std::stringstream ss;
+    ss.precision(10); // change decimal from default 6 to 10
     for (unsigned int i = 0 ; i < count ; i++)
     {
         if (i > 0)
